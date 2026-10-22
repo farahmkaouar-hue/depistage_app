@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  --color-bg: #F5F7FA;
+  --color-surface: #FFFFFF;
+  --color-border: #DDE2EA;
+
+  --color-blue-900: #0B2545;
+  --color-blue-800: #134074;
+  --color-blue-700: #1A5E9A;
+  --color-blue-600: #2176AE;
+  --color-blue-500: #3A8DC7;
+  --color-blue-100: #EAF3FB;
+  --color-blue-50: #F0F7FF;
+
+  --color-teal-600: #0D7A6B;
+  --color-teal-500: #10997F;
+  --color-teal-400: #14B89A;
+  --color-teal-100: #E0F5F1;
+  --color-teal-50: #F0FAF8;
+
+  --color-alert: #D9372B;
+  --color-alert-light: #FEF1F0;
+  --color-alert-border: #F5B8B4;
+
+  --color-warning: #C97A1A;
+  --color-warning-light: #FEF7EA;
+
+  --color-slate-700: #374151;
+  --color-slate-600: #4B5563;
+  --color-slate-500: #6B7280;
+  --color-slate-400: #9CA3AF;
+  --color-slate-200: #E5E7EB;
+  --color-slate-100: #F3F4F6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #F5F7FA;
+  color: #0B2545;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #DDE2EA; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }

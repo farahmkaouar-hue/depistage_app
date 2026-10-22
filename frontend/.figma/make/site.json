@@ -1,0 +1,10 @@
+{
+  "description": "This medical web application streamlines hepatitis C screening for healthcare professionals, offering intuitive patient management and real-time status updates.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

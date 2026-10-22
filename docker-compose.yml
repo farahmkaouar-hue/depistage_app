@@ -1,0 +1,62 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+
+    environment:
+      POSTGRES_DB: depistage_app
+      POSTGRES_USER: depistage_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?définir POSTGRES_PASSWORD dans .env}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U depistage_app -d depistage_app"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+    restart: unless-stopped
+
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+
+    working_dir: /app
+
+    env_file:
+      - ./backend/.env
+
+    environment:
+      PYTHONPATH: /app
+      DATABASE_URL: postgresql+psycopg://depistage_app:${POSTGRES_PASSWORD}@db:5432/depistage_app
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    ports:
+      - "8000:8000"
+
+    restart: unless-stopped
+
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    depends_on:
+      - api
+
+    ports:
+      - "80:80"
+
+    restart: unless-stopped
+
+
+volumes:
+  postgres_data:
