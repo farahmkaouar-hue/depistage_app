@@ -257,7 +257,7 @@ export const createOrientation = (
     notes?: string;
   }
 ) =>
-  api<{ id: string; message: string }>(
+  api<{ id: string; message: string; email_sent: boolean }>(
     `/api/patients/${patientId}/orientations`,
     "POST",
     payload

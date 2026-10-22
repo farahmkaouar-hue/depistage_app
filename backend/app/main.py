@@ -2,6 +2,7 @@ from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
+import logging
 import secrets
 from uuid import UUID
 
@@ -57,6 +58,8 @@ from .schemas import (
 )
 from .security import create_access_token, decode_token, hash_password, invalid_credentials, verify_password
 from .email import send_orientation_email
+
+logger = logging.getLogger(__name__)
 
 
 app = FastAPI(title="API VHC Dépistage", version="1.0.0")
@@ -241,9 +244,9 @@ def me(user: User = Depends(current_user)) -> dict:
 @app.get("/api/doctors", response_model=list[DoctorDirectoryItem])
 def list_doctors(
     db: Session = Depends(get_db),
-     _: User = Depends(require_roles(Role.direction))
+     _: User = Depends(require_roles(Role.medecin, Role.direction))
 ):
-    """Liste des médecins d'orientation gérés par le laboratoire."""
+    """Médecins d'orientation actifs, gérés par l'observatoire, proposés au médecin lors de l'orientation."""
 
     doctors = db.scalars(
         select(ReferralDoctor)
@@ -423,10 +426,22 @@ def create_orientation(patient_id: UUID, payload: OrientationCreate, db: Session
     audit(db, user, "orientation.created" if payload.status.value == "sent" else "orientation.refused", "patient", patient.id)
     db.commit()
 
+    email_sent = True
     if doctor:
-        send_orientation_email(doctor.email, f"{doctor.first_name} {doctor.last_name}", patient.patient_number, patient.anonymized_code or "", payload.appointment_date)
+        # L'orientation est déjà enregistrée : une panne SMTP ne doit pas la faire apparaître comme échouée.
+        try:
+            send_orientation_email(doctor.email, f"{doctor.first_name} {doctor.last_name}", patient.patient_number, patient.anonymized_code or "", payload.appointment_date)
+        except Exception:
+            logger.exception("Échec de l'envoi de l'e-mail d'orientation pour %s", patient.patient_number)
+            email_sent = False
 
-    return {"id": orientation.id, "message": "Orientation envoyée" if doctor else "Refus d'orientation enregistré"}
+    if not doctor:
+        message = "Refus d'orientation enregistré"
+    elif email_sent:
+        message = "Orientation envoyée"
+    else:
+        message = "Orientation enregistrée, mais l'e-mail au médecin n'a pas pu être envoyé. Prévenez le médecin directement."
+    return {"id": orientation.id, "message": message, "email_sent": email_sent}
 
 
 @app.patch("/api/orientations/{orientation_id}")

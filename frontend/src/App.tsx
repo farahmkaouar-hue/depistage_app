@@ -24,6 +24,8 @@ import {
   getCareTasks,
   createOrientation,
   getReferralDoctors,
+  getOrientationCandidates,
+  getDoctors,
   createReferralDoctor,
   updateReferralDoctor,
   type CurrentUser,
@@ -34,8 +36,7 @@ import {
   type ReferralDoctor,
   type ReferralDoctorCreate,
   login as loginRequest,
-  register as registerRequest,
-  verifyEmail
+  register as registerRequest
 } from "./services/api";
 // ── Types ──────────────────────────────────────────────────────────────────
 type Role = "medecin" | "preleveur" | "direction";
@@ -736,17 +737,13 @@ function OrientationScreen({ user, onNavigate, onLogout }: { user: CurrentUser |
   const [decision,setDecision]=useState<""|"sent"|"refused">("");
   const [error,setError]=useState("");
   const [sent,setSent]=useState(false);
+  const [warning,setWarning]=useState("");
 
   useEffect(()=>{
-    Promise.all([getPatients("positive-alert"), getReferralDoctors()])
+    Promise.all([getOrientationCandidates(), getDoctors()])
       .then(([p,d])=>{
         setPatients(p);
-        setDoctors(d.filter(doctor => doctor.is_active).map(doctor => ({
-          id: doctor.id,
-          name: `${doctor.first_name} ${doctor.last_name}`,
-          facility: doctor.facility || "",
-          email: doctor.email || "",
-        })));
+        setDoctors(d);
       })
       .catch(e=>setError(e instanceof ApiError?e.message:"Impossible de charger les orientations."));
   },[]);
@@ -756,14 +753,14 @@ function OrientationScreen({ user, onNavigate, onLogout }: { user: CurrentUser |
     if(!selected||!decision){setError("Sélectionnez le patient et indiquez sa décision.");return;}
     if(decision==="sent"&&!selectedDoctor){setError("Sélectionnez un médecin traitant.");return;}
     try{
-      await createOrientation(selected,{
+      const res=await createOrientation(selected,{
         facility:selectedDoctor?.facility||"",
         doctor_name:selectedDoctor?.name,
         doctor_email:selectedDoctor?.email,
         appointment_date:date||undefined,
         status:decision,
       });
-      setSent(true);setError("");
+      setSent(true);setError("");setWarning(res.email_sent===false?res.message:"");
     }catch(e){setError(e instanceof ApiError?e.message:"Orientation impossible.");}
   };
 
@@ -777,7 +774,8 @@ function OrientationScreen({ user, onNavigate, onLogout }: { user: CurrentUser |
         {decision==="sent"&&<>
           <Select label="Médecin traitant destinataire" options={doctors.map(d=>`${d.email} — ${d.name} — ${d.facility}`)} value={doctorEmail?`${doctorEmail} — ${selectedDoctor?.name||""} — ${selectedDoctor?.facility||""}`:""} onChange={v=>setDoctorEmail(v.split(" — ")[0])} required/>
           <Input label="Date du rendez-vous souhaitée" type="date" value={date} onChange={setDate}/></>}
-        {sent&&<div className="p-3 rounded-lg bg-[#E0F5F1] text-[#0D7A6B] text-sm">Décision enregistrée. {decision==="sent"?"La demande a été envoyée au médecin traitant.":"Le refus d'orientation a été enregistré."}</div>}
+        {sent&&<div className="p-3 rounded-lg bg-[#E0F5F1] text-[#0D7A6B] text-sm">Décision enregistrée. {decision==="sent"?(warning?"":"La demande a été envoyée au médecin traitant."):"Le refus d'orientation a été enregistré."}</div>}
+        {warning&&<div className="p-3 rounded-lg bg-[#FFF6E5] text-[#9A6700] text-sm">{warning}</div>}
         {error&&<div className="p-3 rounded-lg bg-[#FEF1F0] text-[#D9372B] text-sm">{error}</div>}
         <div className="flex justify-between"><Btn variant="secondary" onClick={()=>onNavigate("dashboard")}>Retour</Btn><Btn variant="primary" disabled={sent} onClick={submit}>Enregistrer la décision</Btn></div>
       </div>
